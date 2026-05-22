@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deadlock Phenomenon</title>
+
+    <link rel="icon" type="image/webp" href="logo2.png">
+
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --text-color: #e0e0e0;
+            --accent-color: #369e33;
+            --card-bg: rgba(26, 29, 36, 0.95); 
+            --tab-bg: rgba(42, 46, 56, 0.95);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-image: linear-gradient(rgba(15, 17, 21, 0.85), rgba(15, 17, 21, 0.85)), url('background.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+        }
+
+        header {
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('banner.jpg');
+            background-size: cover;
+            background-position: center;
+            text-align: center;
+            padding: 4rem 2rem 3rem 2rem;
+            border-bottom: 3px solid var(--accent-color);
+        }
+
+        .main-logo {
+            max-width: 600px;
+            width: 90%;
+            height: auto;
+            margin: 0 auto 10px auto;
+            display: block;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));
+        }
+
+        header p {
+            color: #ccc;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            background-color: #000;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background-color: transparent;
+            color: #888;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background-color: var(--tab-bg);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-color);
+            background-color: var(--card-bg);
+            border-top: 2px solid var(--accent-color);
+        }
+
+        .container {
+            max-width: 1200px; 
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-section {
+            display: none;
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            animation: fadeIn 0.4s ease-in-out;
+            border: 1px solid #333;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: var(--accent-color);
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .content-layout {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start; 
+            margin-top: 20px;
+        }
+
+        .content-layout.reverse {
+            flex-direction: row-reverse;
+        }
+
+        .content-text {
+            flex: 1.5; 
+        }
+
+        .content-image {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 25px; 
+        }
+
+        .content-image img {
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: all 0.3s ease; 
+            position: relative;
+            z-index: 1;
+        }
+
+        .content-image img:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.15); 
+            z-index: 10; 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.8);
+        }
+
+        .image-caption {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 10px;
+            text-align: center;
+            font-style: italic;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .content-layout, .content-layout.reverse {
+                flex-direction: column;
+            }
+            .content-image {
+                margin-top: 20px;
+            }
+        }
+
+        .nav-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .action-btn {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .action-btn:hover {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .action-btn:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            background-color: transparent;
+        }
+
+        .hidden-content {
+            display: none;
+            background-color: var(--tab-bg);
+            padding: 20px;
+            margin-top: 15px;
+            border-left: 4px solid var(--accent-color);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .hidden-content img {
+            width: 100%;
+            border-radius: 4px;
+            margin-top: 15px;
+            border: 1px solid #444;
+        }
+
+        .roster-gallery {
+            display: flex;
+            width: 100%;
+            height: 450px;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .hero-card {
+            position: relative;
+            flex: 1;
+            border-radius: 8px;
+            background-color: #1a1d24; 
+            background-size: cover;
+            background-position: center;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .hero-card:hover {
+            flex: 4;
+            border-color: var(--accent-color);
+        }
+
+        .hero-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.6) 60%);
+            padding: 20px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transition-delay: 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 100%;
+        }
+
+        .hero-card:hover .hero-info {
+            opacity: 1;
+        }
+
+        .hero-info h3 {
+            margin: 0 0 5px 0;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            white-space: nowrap;
+        }
+
+        .hero-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        .hero-name-vertical {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-90deg);
+            transform-origin: bottom left;
+            font-weight: bold;
+            color: #888;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            pointer-events: none;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .hero-card:hover .hero-name-vertical {
+            opacity: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: #888;
+            background-color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="logo.webp" alt="The Deadlock Phenomenon" class="main-logo">
+        <p>Valve's Open Secret</p>
+    </header>
+
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="goToPage(1)" id="tab-1">1. History</button>
+        <button class="tab-btn" onclick="goToPage(2)" id="tab-2">2. Lore</button>
+        <button class="tab-btn" onclick="goToPage(3)" id="tab-3">3. Design</button>
+        <button class="tab-btn" onclick="goToPage(4)" id="tab-4">4. Culture</button>
+        <button class="tab-btn" onclick="goToPage(5)" id="tab-5">5. Economy</button>
+        <button class="tab-btn" onclick="goToPage(6)" id="tab-6">6. Roster</button>
+    </div>
+
+    <div class="container">
+        
+        <div class="page-section" id="page-1" style="display: block;">
+            <h2>The Game That Officially Didn't Exist</h2>
+            
+            <div class="content-layout">
+                <div class="content-text">
+                    <p>Valve Corporation, the powerhouse behind the PC gaming storefront Steam, is no stranger to industry-defining titles. In 2007, they popularized the class-based shooter with <em>Team Fortress 2</em>, and in 2013, they cemented the MOBA (Multiplayer Online Battle Arena) genre with <em>Dota 2</em>. Now, <em>Deadlock</em> represents the historical culmination of Valve’s two most influential genres colliding.</p>
+                    <p>But instead of a huge marketing campaign, Valve took the exact opposite approach. For months, <em>Deadlock</em> was an "open secret." Valve allowed thousands of people to playtest the game but strictly forbade them from talking about it publicly. To get in, you had to be personally invited by someone already playing. This created an exclusive, word-of-mouth hype train. Through artificial scarcity, Valve generated buzz and accumulated tens of thousands of daily players, before the game had even finished being developed or officially announced.</p>
+                    
+                    <button class="action-btn" onclick="toggleContent('moba-info')">[+] What exactly is a MOBA?</button>
+                    <div id="moba-info" class="hidden-content">
+                        <strong>Progressive Disclosure:</strong> A MOBA is a highly strategic subgenre of video games. Two teams compete on a predefined battlefield, where each player controls a single, powerful character. They must work alongside AI-controlled 'minions' to slowly conquer territory and destroy the opposing team's main base.
+                    </div>
+                </div>
+                
+                <div class="content-image">
+                    <div>
+                        <img src="history.gif" alt="Deadlock Gameplay Chaos">
+                        <div class="image-caption">Chaotic base defense: Sourced from live match capture.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button class="action-btn" disabled>Back</button>
+                <button class="action-btn" onclick="goToPage(2)">Next: The Lore</button>
+            </div>
+        </div>
+
+        <div class="page-section" id="page-2">
+            <h2>From Sci-Fi to The Occult</h2>
+            
+            <div class="content-layout reverse">
+                <div class="content-text">
+                    <p>During its early development, the game was conceptualized as a sci-fi shooter titled <em>Neon Prime</em>. However, realizing that the futuristic aesthetic was becoming overly saturated in the gaming industry, Valve executed a massive pivot. They completely revamped the game's style into an alternate early 20th-century urban fantasy. Today, the game blends noir, gothic, and dieselpunk fiction into a unique setting known as "The Cursed Apple", an alternate version of New York City.</p>
+                    <p>In this universe, the supernatural always existed but remained a myth until a late 19th-century eclipse triggered the "Maelstrom," opening Astral Gates across the Earth. Now, 50 years later, magic anomalies and occult rituals are a part of everyday life.</p>
+                    <p>This lore directly dictates the gameplay loop. Two god-like entities, the Hidden King and the Archmother (known as Patrons), are attempting to enter the mortal plane. They promise to grant the ultimate wish of anyone who helps them. This summoning "ritual" is the 6v6 match itself, where characters with colliding fates battle through the streets to destroy the enemy's Patron.</p>
+                </div>
+                
+                <div class="content-image">
+                    <div>
+                        <img src="lore2.png" alt="Deadlock Occult Lore and Setting 1">
+                        <div class="image-caption">Neon-Prime: Early development sci-fi concept art. Sourced from archival leaks.</div>
+                    </div>
+                    <div>
+                        <img src="lore.png" alt="Deadlock Occult Lore and Setting 2">
+                        <div class="image-caption">The Cursed Apple: Concept art, sourced from public wiki.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button class="action-btn" onclick="goToPage(1)">Back</button>
+                <button class="action-btn" onclick="goToPage(3)">Next: Game Design</button>
+            </div>
+        </div>
+
+        <div class="page-section" id="page-3">
+            <h2>Chess with Guns</h2>
+            
+            <div class="content-layout">
+                <div class="content-text">
+                    <p>To a non-gamer, <em>Deadlock</em> looks like pure chaos: characters flying on ziplines and casting spells across a 1950s noir-inspired city. However, through the mayhem there is a highly strategic chess-like game being played.</p>
+                    <p>The map is strictly divided into three "lanes." Two teams of six players must slowly push down these lanes to destroy the enemy's base. Each player chooses one unique hero from a pool of 34, every hero has 4 abilities or spells and a gun specific to that character. The core technical design revolves around an in-game economy: defeating enemies grants you "Souls." You must actively choose how to spend these Souls to upgrade your character's weapon, magic, or health. It perfectly bridges the gap between the twitch-reflexes required of a traditional "shooter" and the long-term resource management of a strategy game.</p>
+                    
+                    <button class="action-btn" onclick="toggleContent('parry-info')">[+] The Art of the Parry</button>
+                    <div id="parry-info" class="hidden-content">
+                        <strong>Advanced Tactic:</strong> While guns are the primary weapons, <em>Deadlock</em> features a complex melee combat system. Players can execute heavy punches, but defenders can "Parry" - a mechanic that requires predicting the exact moment of a punch to block it and stun the attacker, adding psychological mind-games and fighting game mechanics to close-quarters combat.
+                        <img src="parry.gif" alt="Deadlock Parry Mechanic Animation">
+                        <div class="image-caption" style="margin-top:5px;">Parry: Close-up of a successful Parry stun. Sourced from in-game footage.</div>
+                    </div>
+                </div>
+
+                <div class="content-image">
+                    <div>
+                        <img src="design2.png" alt="Deadlock Map and Design 1">
+                        <div class="image-caption">Structural Mapping: In-game strategic tactical minimap. Sourced from public wiki https://deadlock.wiki/.</div>
+                    </div>
+                    <div>
+                        <img src="design.jpg" alt="Deadlock Map and Design 2">
+                        <div class="image-caption">Lane Mechanics: Pushing the objective during the laning phase. Sourced from live match capture.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button class="action-btn" onclick="goToPage(2)">Back</button>
+                <button class="action-btn" onclick="goToPage(4)">Next: Social Culture</button>
+            </div>
+        </div>
+
+        <div class="page-section" id="page-4">
+            <h2>A Community Writing the Rules</h2>
+            
+            <div class="content-layout reverse">
+                <div class="content-text">
+                    <p>Because <em>Deadlock</em> is still in early development, there is no official guide on how to play perfectly. This has created a highly collaborative social environment where players gather on platforms like Discord to theory-craft, sharing specific item builds for characters and inventing new strategies to build the "meta" (Most Effective Tactic Available).</p>
+                    <p>This collaboration extends directly into the game itself through the public Build Browser. Here, players can publish, rate, and share custom item loadouts for each character. While many loadouts are highly optimized, mathematically perfect meta builds, others are designed purely for silly, chaotic fun. This allows the community to constantly dictate and shift how the game is played.</p>
+                    <p>However, this genre is also infamous for its intense social friction. MOBAs require heavy reliance on six complete strangers for up to 40 minutes, where one teammate's mistake gives the enemy a mathematical advantage. This creates a highly volatile psychological environment. Navigating this intense social dynamic by balancing collaborative teamwork against the genre's tendency toward toxicity is as much a part of the <em>Deadlock</em> experience as shooting the enemy.</p>
+                </div>
+
+                <div class="content-image">
+                    <div>
+                        <img src="community.png" alt="Deadlock Community and Social Meta">
+                        <div class="image-caption">Theory-crafting: Community-driven character tier list. Sourced from YouTube video; https://www.youtube.com/watch?v=5RhzrMYQ1H8.</div>
+                    </div>
+                    <div>
+                        <img src="community2.png" alt="Deadlock In-Game Build Browser">
+                        <div class="image-caption">The Build Browser: Player-created item loadouts. Sourced from in-game menus.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button class="action-btn" onclick="goToPage(3)">Back</button>
+                <button class="action-btn" onclick="goToPage(5)">Next: The Economy</button>
+            </div>
+        </div>
+
+        <div class="page-section" id="page-5">
+            <h2>How "Free" Generates Billions</h2>
+            
+            <div class="content-layout">
+                <div class="content-text">
+                    <p>Historically, the most successful games in the MOBA genre are entirely free to play. So, how does a free game generate billions in revenue?</p>
+                    <p>The answer lies in digital cosmetics and the "Whale" economy. Players spend real money to buy different outfits, voice lines, and visual effects for their characters. While the vast majority of players spend nothing, a small percentage (referred to in the industry as "whales") spend thousands of dollars, effectively subsidizing the game for everyone else. Furthermore, because Valve owns the Steam platform, these cosmetics are digital investments traded on the Steam Community Market for real-world value. This creates a self-sustaining, highly lucrative micro-economy without ever forcing players to "pay to win."</p>
+                </div>
+                
+                <div class="content-image">
+                    <div>
+                        <img src="economy.png" alt="Deadlock Digital Economy">
+                        <div class="image-caption">Winter Skins: In-game unlockable christmas skins. Sourced from; https://vpesports.com/your-guide-to-free-holiday-skins-for-every-character-in-deadlock</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <button class="action-btn" onclick="goToPage(4)">Back</button>
+                <button class="action-btn" onclick="goToPage(6)">Next: The Roster</button>
+            </div>
+        </div>
+
+        <div class="page-section" id="page-6">
+            <h2>The Cursed Apple Roster</h2>
+            <p>With a constantly expanding roster of 34 unique heroes, the striking character design is one of <em>Deadlock's</em> greatest strengths. Hover over the portraits below to explore a curated selection of standout figures and learn about their unique playstyles within the occult city.</p>
+            
+            <div class="roster-gallery">
+                
+                <div class="hero-card" style="background-image: url('abrams.png');">
+                    <span class="hero-name-vertical">Abrams</span>
+                    <div class="hero-info">
+                        <h3>Abrams</h3>
+                        <p>A demonic private investigator. He thrives in close-quarters combat as a frontline brawler, using heavy melee attacks and a life-stealing book to outlast enemies.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('calico.png');">
+                    <span class="hero-name-vertical">Calico</span>
+                    <div class="hero-info">
+                        <h3>Calico</h3>
+                        <p>A former monster hunter turned shadow-assassin. Alongside her spectral cat Ava, she ambushes foes with explosive Gloom Bombs and leaping slashes before vanishing back into the darkness.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('mina.png');">
+                    <span class="hero-name-vertical">Mina</span>
+                    <div class="hero-info">
+                        <h3>Mina</h3>
+                        <p>An ambitious vampire socialite operating as a ranged glass cannon. She utilizes swift bat swarms to escape danger and silences groups of enemies to drain their life force from afar.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('silver.png');">
+                    <span class="hero-name-vertical">Silver</span>
+                    <div class="hero-info">
+                        <h3>Silver</h3>
+                        <p>A werewolf bounty hunter seeking to cure her personal troubles. She locks down targets with an entangling bola and shotgun blasts before her terrifying Lycan curse takes over close-quarters combat.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('lash.png');">
+                    <span class="hero-name-vertical">Lash</span>
+                    <div class="hero-info">
+                        <h3>Lash</h3>
+                        <p>A cocky, high-flying bruiser. He relies on his grappling hook and unparalleled vertical mobility to dive into the backline and stomp his enemies into the pavement.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('paige.png');">
+                    <span class="hero-name-vertical">Paige</span>
+                    <div class="hero-info">
+                        <h3>Paige</h3>
+                        <p>A talented bibliomancer searching for her missing brother. She brings literature to life to control the battlefield, granting allies magical plot armor and summoning a phantom cavalry to trample her foes.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('rem.png');">
+                    <span class="hero-name-vertical">Rem</span>
+                    <div class="hero-info">
+                        <h3>Rem</h3>
+                        <p>A sleepy stowaway from the world of dreams trying to find his way home. He supports his allies with his curious helpers and uses a devastating 'Naptime' ultimate to put enemies to sleep.</p>
+                    </div>
+                </div>
+
+                <div class="hero-card" style="background-image: url('thedoorman.png');">
+                    <span class="hero-name-vertical">The Doorman</span>
+                    <div class="hero-info">
+                        <h3>The Doorman</h3>
+                        <p>A cosmic entity masquerading as a polite hotel doorman. He provides his team with teleporting doorways and disrupts enemies by violently ramming them with high-speed luggage carts.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="image-caption" style="margin-top: 15px;">Hero portraits sourced from public deadlock wiki, https://deadlock.wiki/</div>
+
+            <div class="nav-controls">
+                <button class="action-btn" onclick="goToPage(5)">Back</button>
+                <button class="action-btn" disabled>End of Artefact</button>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p><strong>NETS3010: Online Games and Play - Creative Artefact</strong></p>
+        <p>Author: Hartmut K. | Domain: hartmutk.dev</p>
+        <p><em>Copyright & Fair Dealing Statement: This website is created for educational purposes. All references to Deadlock and Valve Corporation fall under Fair Dealing for the purpose of criticism and review. No copyright infringement is intended.</em></p>
+    </footer>
+
+    <script>
+        let currentPage = 1;
+        const totalPages = 6;
+
+        function goToPage(pageNumber) {
+            for (let i = 1; i <= totalPages; i++) {
+                document.getElementById('page-' + i).style.display = 'none';
+                document.getElementById('tab-' + i).classList.remove('active');
+            }
+            document.getElementById('page-' + pageNumber).style.display = 'block';
+            document.getElementById('tab-' + pageNumber).classList.add('active');
+            currentPage = pageNumber;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleContent(id) {
+            var element = document.getElementById(id);
+            if (element.style.display === "block") {
+                element.style.display = "none";
+            } else {
+                element.style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>
